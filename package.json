@@ -1,0 +1,24 @@
+{
+  "name": "minimal-publisher",
+  "version": "0.1",
+  "description": "A minimal framework to serve frontmatter markdown - TypeScript, LiquidJS, Bootstrap",
+  "scripts": {
+    "build": "tsc",
+    "publish": "node dist/app.js --env prod",
+    "dev": "ts-node-dev --respawn --clear  src/app.ts --env dev",
+    "test": "ts-node-dev --respawn --clear  src/app.ts --env test"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.1",
+    "@types/glob": "^8.1.0",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "glob": "^11.0.1",
+    "gray-matter": "^4.0.3",
+    "liquidjs": "^10.21.0",
+    "marked": "^15.0.7",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
+  }
+}

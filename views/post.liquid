@@ -1,0 +1,14 @@
+<html>
+<head>
+</head>
+<body>
+  <strong>{{ post.title }}</strong><br/>
+  Date: {{ post.date | date: "%Y-%m-%d" }}<br/>
+  Tags: {{ post.tags | join: ", " }}<br/>
+  Path: {{ post.path }}
+<br/>
+
+{{post.body}}
+
+</body>
+</html>

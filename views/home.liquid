@@ -1,0 +1,20 @@
+<html>
+<head>
+</head>
+<body>
+{% if posts.length > 0 %}
+      <ul>
+        {% for post in posts %}
+          <li>
+            <strong>{{ post.title }}</strong><br/>
+            Date: {{ post.date | date: "%Y-%m-%d" }}<br/>
+            Tags: {{ post.tags | join: ", " }}<br/>
+            Path: {{ post.path }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No posts found.</p>
+    {% endif %}
+</body>
+</html>
