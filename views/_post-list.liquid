@@ -1,0 +1,13 @@
+{% if posts.length > 0 %}
+<h3>{{title}}</h3>
+  <ul>
+    {% for post in posts %}
+      <li>
+        <a href='{{post.urlPath}}'><strong>{{ post.title }}</strong></a>, <i>{{ post.date | date: "%Y-%m-%d" }}</i>
+      </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    <p>No posts found.</p>
+  {% endif %}
+ {% include '_footer.liquid' %}

@@ -1,0 +1,7 @@
+
+
+{% include '_header.liquid' %}
+{{ body }}
+{% assign postListTitle = selected_tag | append: ' posts' %}
+{% include '_post-list.liquid' title: postListTitle, posts: posts%}
+{% include '_footer.liquid' %}

@@ -34,6 +34,18 @@ export function tokeniseUrlPath(inputPath: string): TokenisedUrlPath {
 export async function resolveMarkdownFilePathFromUrlPath(inputPath: string): Promise<string | null> {
   const tokenisedUrlPath = tokeniseUrlPath(inputPath)
 
+  if(tokenisedUrlPath.baseSlug.match(/[a-z\-]*/)){
+
+     console.log('possible index file ' + tokenisedUrlPath.baseSlug)
+     const possibleIndexFilePath = path.join(app.get('CONTENT_DIR'),'/',tokenisedUrlPath.baseSlug + '-index.md')
+     console.log('index file: ' + possibleIndexFilePath)
+     try { 
+      await fsp.access(possibleIndexFilePath, fs.constants.F_OK)
+      
+      return possibleIndexFilePath.toString()
+     }catch{ }
+  }
+  
   // Search pattern like "content/tests/*-test-post-alpha.md"
   const pattern = path.join(app.get('CONTENT_DIR'), 
     tokenisedUrlPath.subDirs.join('/'), 
@@ -61,7 +73,8 @@ export async function allMarkdownFiles(dir: string) : Promise<ParsedMarkdownFile
   const parsedFiles : ParsedMarkdownFile[] = []
   for(const filePath of files) {
     const parsedFile = await parseMarkdownFile(filePath, false)
-    if(parsedFile.urlPath != '/home') parsedFiles.push(parsedFile)
+    const resourceName = filePath.split('/').pop() || ''
+    if(!resourceName.includes('-index')) parsedFiles.push(parsedFile)
   } 
   return parsedFiles
 }
@@ -90,7 +103,8 @@ export async function parseMarkdownFile(filePath: string, getContent: boolean = 
     date: date,
     ...frontMatter,
     urlPath: getLinkFromFilePath(filePath),
-    body: 'not-parsed' 
+    fileParsed: true,
+    body: 'no-content' 
   };
   if(getContent) parsedFile['body'] =  await marked(content);
   const parsedFileWithSubDirTags : ParsedMarkdownFile = addRelativeDirToParsedFileTags(parsedFile)
@@ -117,7 +131,7 @@ export function errorParsedMarkdownFile(error:string){
 export async function parseMarkDownFileFromUrlPath(inputPath: string) : Promise<ParsedMarkdownFile>{
   console.log(`parseMarkDownFileFromUrlPath: ${inputPath} `) 
   const markdownFilePath = await resolveMarkdownFilePathFromUrlPath(inputPath)
-  if(!markdownFilePath){ return errorParsedMarkdownFile('Could not find file') }
+  if(!markdownFilePath){ return errorParsedMarkdownFile('Invalid Path') }
   console.log(`filePath: ${markdownFilePath}`)
   const parsedMarkdownFile = await parseMarkdownFile(markdownFilePath, true)
   if(!parsedMarkdownFile){ return errorParsedMarkdownFile('Could not parse file') }

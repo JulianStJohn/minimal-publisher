@@ -1,5 +1,5 @@
 ---
-title: Test Blog Post
+title: How good are Urns 
 author: John Keats
 tags: [metaphysics, poetry]
 ---
@@ -16,4 +16,3 @@ Pipe to the spirit ditties of no tone:
 
 Fair youth, beneath the trees, thou canst not leave
 
-![Best viewed on Navigator 6.6](./images/netscape-now.gif =100x20)

@@ -43,6 +43,7 @@ app.locals.siteTitle = SITE_NAME
 app.set('CONTENT_DIR', CONTENT_DIR)
 app.set('ROOT_DIR', process.cwd())
 
+// root home page
 app.get('/', async (_req, res) => {
   try {
     const data = await filehelpers.allMarkdownFiles(CONTENT_DIR);
@@ -57,6 +58,26 @@ app.get('/', async (_req, res) => {
   }
 });
 
+// filter invalid paths
+app.get('/*path', async (req, res, next) => {
+  const validCharsRegex = /^(?<subdirectories>[a-z\-_\/]*)\/(?<resource>[a-z\-_0-9A-Z\.]+)$/;
+  const validCharsMatch = req.path.toString().match(validCharsRegex);
+  if(!validCharsMatch || !validCharsMatch.groups){
+    console.error(`Invalid path: ${req.path}`);
+    res.render('error.liquid', { error: "Not Found"});
+    return
+  }
+  const resource = validCharsMatch.groups.resource
+  const isPost = resource.match(/^[a-z\-_]*$/)
+  if(isPost) { next(); return; } 
+  const isResourceFile = resource.match(/^[A-Z0-9\.a-z\-_]*\.(css|js|png|jpg|jpeg|gif)$/)
+  if(isResourceFile) { next(); return; } 
+
+  console.error(`Invalid path: ${req.path}`);
+  res.render('error.liquid', { error: "Not Found"});
+});
+
+
 // show all posts for a tag
 app.get('/*path', async (req, res, next) => {
   try {
@@ -68,47 +89,48 @@ app.get('/*path', async (req, res, next) => {
       if (!awaitedMarkdownFile || !awaitedMarkdownFile.tags){ continue; }
       if(awaitedMarkdownFile.tags.includes(possibleSelectedTag)) markdownFilesWithMatchingTag.push(awaitedMarkdownFile)
     }
-   
     if(markdownFilesWithMatchingTag.length == 0){
       console.log('Not a tag list')
       return next();
     }
-
-    res.render('home.liquid', {
+    const parsedIndexFile = await filehelpers.parseMarkDownFileFromUrlPath(`/${possibleSelectedTag}`)
+    res.render('topic.liquid', {
+      body: parsedIndexFile.body,
       posts: markdownFilesWithMatchingTag, 
       selected_tag: possibleSelectedTag
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error' });
+    console.error(`Invalid path: ${req.path}`);
+    res.render('error.liquid', { error: "Not Found"});
   }
 });
 
-
-// serve images
+//  Images
 app.get(/^\/(.*)\.(jpeg|jpg|gif|png)$/, async (req: Request, res) => {
     console.log('path: ' + req.path)
     const filePath = CONTENT_DIR + '/' + req.path
     res.sendFile(filePath, (err) => {
       if (err) {
-        console.error(err);
+        console.error(`Error returning image: ${req.path} - ${err.message}`);
         res.status(404).send('Image not found');
       }
     });
 });
 
+// CSS
 app.get(/^\/(css)\/(.*)\.(css)$/, async (req: Request, res) => {
   console.log('path: ' + req.path)
   const filePath = app.get('ROOT_DIR') + '/public/' + req.path
   res.type('css')
   res.sendFile(filePath, (err) => {
     if (err) {
-      console.error(err);
+      console.error(`Error returning css: ${req.path} - ${err.message}`);
       res.status(404).send('Not found');
     }
   });
 });
 
+// JS
 app.get(/^\/(js)\/(.*)\.(js)$/, async (req: Request, res) => {
   console.log('path: ' + req.path)
   const filePath = app.get('ROOT_DIR') + '/public/' + req.path
@@ -116,25 +138,23 @@ app.get(/^\/(js)\/(.*)\.(js)$/, async (req: Request, res) => {
   res.sendFile(filePath, (err) => {
   if (err) {
     console.error(err);
+    console.error(`Error returning js: ${req.path} - ${err.message}`);
     res.status(404).send('Not found');
   }
   });
 });
 
+// Posts
 app.get('/*path', async (req: Request, res) => {
 
-  const post = filehelpers.parseMarkDownFileFromUrlPath(req.path.toString())
-  // deal with errors here
-  /*
-  if(){
-    console.error(err);
-    res.status(404).send('...');
+  const post = await filehelpers.parseMarkDownFileFromUrlPath(req.path.toString())
+  if(!post.fileParsed){
+    console.error(`File not found: ${req.path} - ${post.error}`);
+    res.render('error.liquid', { error: post.error });
+    return
   }
-  */
     
- res.render('post.liquid', {
-    post: post
- });
+  res.render('post.liquid', { post: post });
 
 });
 
