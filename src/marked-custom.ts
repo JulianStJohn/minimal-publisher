@@ -49,9 +49,10 @@ renderer.image = function (token: any) {
   const widthAttr = width ? ` width="${width}"` : '';
   const heightAttr = height ? ` height="${height}"` : '';
   const titleAttr = title ? ` title="${title}"` : '';
+  const fluidClass =  href == '/images/hero.jpg' ? '' : ' class="img-fluid" ';
   const alt = text || '';
 
-  return `<img src="${href}" alt="${alt}"${titleAttr}${widthAttr}${heightAttr}>`;
+  return `<img src="${href}" alt="${alt}"${titleAttr}${widthAttr}${heightAttr}${fluidClass}>`;
 };
 
 marked.use({ renderer });

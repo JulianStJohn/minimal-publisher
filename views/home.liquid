@@ -3,8 +3,8 @@
 {% include '_header.liquid' %}
 <div class="container">
   <div class="row"> 
-    <div class="col-6">{{ body }}</div>
-    <div class="col-6 text-end"><img src="/images/hero.jpg"/> </div>
+    <div class="col-12 col-lg-6">{{ body }}</div>
+    <div class="col-6 text-end d-none d-lg-block"><img src="/images/hero.jpg" width='350px' /> </div>
 </div>
 {% include '_post-list.liquid' title: 'Posts', posts: posts%}
 {% include '_footer.liquid' %}
