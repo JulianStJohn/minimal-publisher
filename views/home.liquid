@@ -9,7 +9,8 @@
             <strong>{{ post.title }}</strong><br/>
             Date: {{ post.date | date: "%Y-%m-%d" }}<br/>
             Tags: {{ post.tags | join: ", " }}<br/>
-            Path: {{ post.path }}
+            Path: {{ post.path }}<br/>
+            URl: <a href="{{ post.urlPath }}">link</a>
           </li>
         {% endfor %}
       </ul>

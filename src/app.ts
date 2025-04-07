@@ -2,7 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import * as fsp from 'fs/promises';
 import path from 'path';
-import { marked } from './marked-custom';
+
 
 import matter from 'gray-matter';
 import { glob } from 'glob';
@@ -10,8 +10,7 @@ import dotenv from 'dotenv';
 import { Liquid } from 'liquidjs';
 import { Request } from 'express';
 
-import { scanMarkdownFiles } from './file-helpers'
-import { resolveMarkdownFilenameFromPath } from './route-helpers'
+import  * as filehelpers from './file-helpers'
 
 // Load .env config
 dotenv.config();
@@ -43,7 +42,7 @@ app.set('CONTENT_DIR', CONTENT_DIR)
 
 app.get('/', async (_req, res) => {
   try {
-    const data = await scanMarkdownFiles(CONTENT_DIR);
+    const data = await filehelpers.scanMarkdownFiles(CONTENT_DIR);
     res.render('home.liquid', {
       posts: data 
     });
@@ -66,36 +65,20 @@ app.get(/^\/(.*)\.(jpeg|jpg|gif|png)$/, async (req: Request, res) => {
 });
 
 app.get('/*path', async (req: Request, res) => {
-  try {
-    console.log('path: ' + req.path)
-    const filePath = await resolveMarkdownFilenameFromPath(req.path.toString())
-    console.log(`filePath: ${filePath}`)
 
-    if(!filePath){
-      throw new Error
-    }
-    // ensure the file ends in `.md`
-    //const filePath = fullPath.endsWith('.md') ? fullPath : fullPath + '.md';
-
-    // Read and parse the file
-    const fileContent = await fsp.readFile(filePath, { encoding: 'utf8' as BufferEncoding });
-    const { content, data: frontMatter } = matter(fileContent);
-    const html = marked(content);
-
-    const post = {
-      ...frontMatter, 
-      body: html,
-      filePath: `/${filePath}`
-    }
-
-    res.render('post.liquid', {
-      post: post
-    });
-
-  } catch (err) {
+  const post = filehelpers.parseMarkDownFileFromUrlPath(req.path.toString())
+  // deal with errors here
+  /*
+  if(){
     console.error(err);
-    res.status(404).send('Document not found');
+    res.status(404).send('...');
   }
+  */
+    
+ res.render('post.liquid', {
+    post: post
+ });
+
 });
 
 app.listen(PORT, () => {

@@ -2,7 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import * as fsp from 'fs/promises';
 import path from 'path';
-import { marked } from 'marked';
+import { marked } from './marked-custom';
 
 import matter from 'gray-matter';
 import { glob } from 'glob';
@@ -11,7 +11,37 @@ import { Liquid } from 'liquidjs';
 import { Request } from 'express';
 
 
-// Utility: extract date from filename (e.g. post-23-04-2023.md)
+import app from './app';
+
+
+type TokenisedUrlPath = {
+  baseSlug: string;
+  subDirs: string[];
+}
+
+export function tokeniseUrlPath(inputPath: string): TokenisedUrlPath {
+  const cleanPath = inputPath.replace(/^\/+/, ''); // remove leading slashes
+  const parts = cleanPath.split('/');
+  const baseSlug = parts.pop() || ''; // last part like "test-post-alpha"
+  const tokenisedUrlPath : TokenisedUrlPath = {
+    baseSlug: baseSlug,
+    subDirs: parts
+  }
+  return tokenisedUrlPath 
+}
+
+export async function resolveMarkdownFilePathFromUrlPath(inputPath: string): Promise<string | null> {
+  const tokenisedUrlPath = tokeniseUrlPath(inputPath)
+
+  // Search pattern like "content/tests/*-test-post-alpha.md"
+  const pattern = path.join(app.get('CONTENT_DIR'), 
+    tokenisedUrlPath.subDirs.join('/'), 
+    `*-${tokenisedUrlPath.baseSlug}.md`).replace(/\\/g, '/'
+  );
+  const matches = await glob(pattern);
+  return matches.length > 0 ? matches[0] : null;
+}
+
 function extractDateFromFilename(filename: string): Date | null {
   const dateRegex = /^(\d{8})[-].*\.md$/;
   const match = filename.match(dateRegex);
@@ -24,23 +54,74 @@ function extractDateFromFilename(filename: string): Date | null {
   return new Date(Number(year), Number(month) - 1, Number(day));
 }
 
-// Scan and return markdown data
 export async function scanMarkdownFiles(dir: string) {
   const pattern = path.join(dir, '**/*.md').replace(/\\/g, '/'); // Windows compatibility
   const files = await glob(pattern);
-  
-  return files.map(filePath => {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const { data: frontMatter } = matter(content);
-    const filename = path.basename(filePath);
-    const date = extractDateFromFilename(filename);
+  const parsedFiles = []
+  for(const filePath of files) {
+    parsedFiles.push(parseMarkdownFile(filePath, false))
+  } 
+  return parsedFiles
+}
 
-    return {
-      filename: filename,
-      path: filePath,
-      date: date,
-      tst: "tst",
-      ...frontMatter
-    };
-  });
+type ParsedMarkdownFile = {
+  filename: string,
+  path: string,
+  date: Date | null,
+  body?: string,
+  tags?: string[],
+  author?: string,
+  title?: string,
+  urlPath? : string
+}
+export async function parseMarkdownFile(filePath: string, getContent: boolean = false) : Promise<ParsedMarkdownFile>{
+  const fileContent = await fsp.readFile(filePath, { encoding: 'utf8' as BufferEncoding });
+  const filename = path.basename(filePath);
+  const date = extractDateFromFilename(filename);
+  
+  const { content, data: frontMatter } = matter(fileContent);
+  const parsedFile : ParsedMarkdownFile = {
+    filename: filename,
+    path: filePath,
+    date: date,
+    ...frontMatter,
+    urlPath: getLinkFromFilePath(filePath),
+    body: 'not-parsed' 
+  };
+  if(getContent) parsedFile['body'] =  await marked(content);
+  const parsedFileWithSubDirTags : ParsedMarkdownFile = addRelativeDirToParsedFileTags(parsedFile)
+  return parsedFileWithSubDirTags 
+}
+
+export function getTokenisedRelativeFilePathFromFullFilePath (fullFilePath : string) : string[] {
+  return (path.dirname(fullFilePath).toString().replace(app.get('CONTENT_DIR'),'')).split('/').filter(e => e !== '') 
+}
+
+export function addRelativeDirToParsedFileTags(parsedFile : ParsedMarkdownFile) : ParsedMarkdownFile{
+  const tokenisedRelativePath = getTokenisedRelativeFilePathFromFullFilePath(parsedFile.path) 
+  if(!('tags' in parsedFile)) { parsedFile['tags'] = [] }
+  if((parsedFile.tags != undefined) && tokenisedRelativePath.length > 0){
+    const clonedTagsArray = [...parsedFile.tags, ...tokenisedRelativePath]
+    parsedFile.tags = clonedTagsArray
+  }
+  return parsedFile 
+}
+
+export async function parseMarkDownFileFromUrlPath(inputPath: string){
+  console.log(`parseMarkDownFileFromUrlPath: ${inputPath} `) 
+  const markdownFilePath = await resolveMarkdownFilePathFromUrlPath(inputPath)
+  if(!markdownFilePath){ return { fileParsed: false, error: 'Could not find file'} }
+  console.log(`filePath: ${markdownFilePath}`)
+  const parsedMarkdownFile = await parseMarkdownFile(markdownFilePath, true)
+  if(!parsedMarkdownFile){ return { fileParsed: false, error: 'Could not parse file'} }
+  return parsedMarkdownFile 
+}
+
+export function getLinkFromFilePath(inputPath: string){
+  const filename = path.basename(inputPath)
+  const filenameSlugMatch = filename.match(/^[0-9]{8}\-(?<filenameslug>[a-zA-Z0-9\-]+)\.md/)
+  const filenameSlug = (filenameSlugMatch?.groups) ? filenameSlugMatch.groups.filenameslug : ''
+  const tokenisedRelativePath = getTokenisedRelativeFilePathFromFullFilePath(inputPath)
+  const generatedLink = tokenisedRelativePath.join('/') + '/' + filenameSlug
+  return (generatedLink[0] == "/") ? generatedLink : "/" + generatedLink
 }
