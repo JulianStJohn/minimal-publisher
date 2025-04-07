@@ -1,14 +1,11 @@
-<html>
-<head>
-</head>
-<body>
-  <strong>{{ post.title }}</strong><br/>
-  Date: {{ post.date | date: "%Y-%m-%d" }}<br/>
-  Tags: {{ post.tags | join: ", " }}<br/>
-  Path: {{ post.path }}
-<br/>
-
-{{post.body}}
-
-</body>
-</html>
+ {% include '_header.liquid' %}
+            <h1 class="mb-3">{{post.title}}</h1>
+            <p><i>{{ post.date | date: "%b %d %Y"}}</i></p>
+            {% for tag in post.tags %}
+            <a href='/{{ tag }}'>
+              <button  class="btn btn-secondary btn-sm pill">
+                {{tag}}
+              </button></a>
+            {% endfor %}
+            <p>{{post.body}}</p>
+ {% include '_footer.liquid' %}

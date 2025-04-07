@@ -23,6 +23,7 @@ export function tokeniseUrlPath(inputPath: string): TokenisedUrlPath {
   const cleanPath = inputPath.replace(/^\/+/, ''); // remove leading slashes
   const parts = cleanPath.split('/');
   const baseSlug = parts.pop() || ''; // last part like "test-post-alpha"
+  console.log(`tokeniseUrlPath baseSlug: ${baseSlug} subDirs: ${parts.join(',')}`)
   const tokenisedUrlPath : TokenisedUrlPath = {
     baseSlug: baseSlug,
     subDirs: parts
@@ -54,12 +55,13 @@ function extractDateFromFilename(filename: string): Date | null {
   return new Date(Number(year), Number(month) - 1, Number(day));
 }
 
-export async function scanMarkdownFiles(dir: string) {
+export async function allMarkdownFiles(dir: string) : Promise<ParsedMarkdownFile[]>  {
   const pattern = path.join(dir, '**/*.md').replace(/\\/g, '/'); // Windows compatibility
   const files = await glob(pattern);
-  const parsedFiles = []
+  const parsedFiles : ParsedMarkdownFile[] = []
   for(const filePath of files) {
-    parsedFiles.push(parseMarkdownFile(filePath, false))
+    const parsedFile = await parseMarkdownFile(filePath, false)
+    if(parsedFile.urlPath != '/home') parsedFiles.push(parsedFile)
   } 
   return parsedFiles
 }
@@ -68,6 +70,8 @@ type ParsedMarkdownFile = {
   filename: string,
   path: string,
   date: Date | null,
+  fileParsed? : boolean,
+  error? : string,
   body?: string,
   tags?: string[],
   author?: string,
@@ -106,14 +110,17 @@ export function addRelativeDirToParsedFileTags(parsedFile : ParsedMarkdownFile) 
   }
   return parsedFile 
 }
+export function errorParsedMarkdownFile(error:string){
+  return { fileParsed: false, error: error, filename: '', path: '', date: null } 
+}
 
-export async function parseMarkDownFileFromUrlPath(inputPath: string){
+export async function parseMarkDownFileFromUrlPath(inputPath: string) : Promise<ParsedMarkdownFile>{
   console.log(`parseMarkDownFileFromUrlPath: ${inputPath} `) 
   const markdownFilePath = await resolveMarkdownFilePathFromUrlPath(inputPath)
-  if(!markdownFilePath){ return { fileParsed: false, error: 'Could not find file'} }
+  if(!markdownFilePath){ return errorParsedMarkdownFile('Could not find file') }
   console.log(`filePath: ${markdownFilePath}`)
   const parsedMarkdownFile = await parseMarkdownFile(markdownFilePath, true)
-  if(!parsedMarkdownFile){ return { fileParsed: false, error: 'Could not parse file'} }
+  if(!parsedMarkdownFile){ return errorParsedMarkdownFile('Could not parse file') }
   return parsedMarkdownFile 
 }
 

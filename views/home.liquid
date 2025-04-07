@@ -1,21 +1,21 @@
-<html>
-<head>
-</head>
-<body>
+
+
+{% include '_header.liquid' %}
+<div class="container">
+  <div class="row"> 
+    <div class="col-6">{{ body }}</div>
+    <div class="col-6 text-end"><img src="/images/hero.jpg"/> </div>
+</div>
 {% if posts.length > 0 %}
-      <ul>
-        {% for post in posts %}
-          <li>
-            <strong>{{ post.title }}</strong><br/>
-            Date: {{ post.date | date: "%Y-%m-%d" }}<br/>
-            Tags: {{ post.tags | join: ", " }}<br/>
-            Path: {{ post.path }}<br/>
-            URl: <a href="{{ post.urlPath }}">link</a>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No posts found.</p>
-    {% endif %}
-</body>
-</html>
+<h3>Posts</h3>
+  <ul>
+    {% for post in posts %}
+      <li>
+        <a href='{{post.urlPath}}'><strong>{{ post.title }}</strong></a>, <i>{{ post.date | date: "%Y-%m-%d" }}</i>
+      </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    <p>No posts found.</p>
+  {% endif %}
+ {% include '_footer.liquid' %}
