@@ -1,12 +1,54 @@
 <html>
+
 <head>
- {% include '_bootstrap-includes.liquid' %}
- <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  {% include '_bootstrap-includes.liquid' %}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
+
 <body>
-    <div class="container">
-      <div class="row justify-content-center">
-        <div class="col-12 col-sm-10 col-md-8 col-lg-10">
-          <div class="p-2 ps-4 pe-4 border-top border-left border-right rounded-top shadow mt-3 mb-0 navRow">
-          <a href='/' style='text-decoration:none; color:white;'>{{ siteTitle }}</a></div>
-          <div class="p-4 border-bottom border-left border-right rounded-bottom bg-white shadow mt-0 mb-5">
+
+
+  <nav class="navbar bg-light sticky-top">
+    <div class="container d-flex justify-content-center">
+      <div class="col-12 col-md-10 col-xl-8 d-flex justify-content-between">
+
+        <div class="d-flex align-items-center gap-2">
+          <!-- Hamburger button triggers offcanvas -->
+          <button class="navbar-toggler hamburger-button" id="hamburger-menu-icon" type="button"
+            data-bs-toggle="offcanvas" data-bs-target="#mobileMenu">
+            <span class="navbar-toggler-icon hamburger-button"></span>
+          </button>
+          <div class="container ms-2">
+            <a class="navbar-brand mb-0 h1" href="/">{{ siteTitle }}</a>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 pt-2 pe-2">
+          <a href="{{ linkedIn }}" target="_blank" class="text-dark">
+            <i class="bi bi-linkedin fs-4"></i>
+          </a>
+          <a href="{{ github }}" target="_blank" class="text-dark">
+            <i class="bi bi-github fs-4"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Offcanvas menu -->
+  <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileMenu">
+
+
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="offcanvasExampleLabel">Menu</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+
+    <div class="offcanvas-body menu-links container ps-4">
+      {{ menuContent }}
+    </div>
+  </div>
+
+  <div class="container pb-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-10 col-xl-8">

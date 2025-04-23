@@ -1,10 +1,47 @@
-
-
 {% include '_header.liquid' %}
-<div class="container">
-  <div class="row"> 
-    <div class="col-12 col-lg-6">{{ body }}</div>
-    <div class="col-6 text-end d-none d-lg-block"><img src="/images/hero.jpg" width='350px' /> </div>
+{% include '_content-container.liquid' %}
+  <div class="container">
+    <div class="row">
+      <div class="col-12 col-lg-6">{{ body }}</div>
+      <div class="col-6 text-end d-none d-lg-block"><img src="/images/hero.jpg" width='350px' /></div>
+    </div>
+  </div>
 </div>
-{% include '_post-list.liquid' title: 'Posts', posts: posts%}
+
+<!-- Featured Posts -->
+<div class="container-fluid px-0">
+  {% for featuredTagData in featuredTagsData %}
+  <div class="row">
+    <div class="col-12 col-md-12 p-3 ">
+      <span style="font-size: 1.2rem;">Featured posts: {{ featuredTagData.tag }}</span>
+    </div>
+  </div>
+  <div class="row g-3">
+    {% for featuredTagPost in featuredTagData.posts %}
+    <div class="col-12 col-md-4 ">
+
+      <div class="card shadow mb-2" onclick="window.location.href='{{ featuredTagPost.urlPath }}'" style="height: 400px; position: relative; overflow: hidden; cursor: pointer;">
+        <img class="card-img-top" src="{{featuredTagPost.image}}" style="filter: grayscale(100%);">
+        <div class="card-body">
+          <p>
+            <span class='fs-5'>{{ featuredTagPost.title}}</span>
+          </p>
+          <p>
+            <span class='fw-light'>
+             
+              {{ featuredTagPost.body }}
+            </span>
+          </p>
+          <img src="/images/white-gradient.png"
+            style="position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; pointer-events: none; z-index: 100; ">
+        </div>
+      </div>
+    </div>
+
+    {% endfor %}
+  </div>
+
+    {% endfor %}
+</div>
+
 {% include '_footer.liquid' %}

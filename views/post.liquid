@@ -1,11 +1,27 @@
- {% include '_header.liquid' %}
-            <h1 class="mb-3">{{post.title}}</h1>
-            <p><i>{{ post.date | date: "%b %d %Y"}}</i></p>
-            {% for tag in post.tags %}
-            <a href='/{{ tag }}'>
-              <button  class="btn btn-secondary btn-sm pill">
-                {{tag}}
-              </button></a>
-            {% endfor %}
-            <p>{{post.body}}</p>
- {% include '_footer.liquid' %}
+{% include '_header.liquid' %}
+
+  <div class="p-0 shadow m-0">
+
+  {% if post.image != 'none' %}
+    <div class="position-relative text-white">
+    <img src="{{ post.image }}" class="img-fluid w-100" />
+    <div class="position-absolute bottom-0 start-0 w-100 px-3 py-2 bg-dark bg-opacity-50">
+      <h1 class="m-0 text-white text-shadow m-0">{{post.title}}</h1>
+    </div>
+  </div>
+{% endif %}
+{% include '_content-container.liquid' %}
+
+{% if post.image == 'none' %}
+<h1 class="">{{post.title}}</h1>
+{% endif %} 
+
+<p><i>{{ post.date | date: "%b %d %Y"}}</i></p>
+{% for tag in post.tags %}
+<a href='/{{ tag }}'>
+  <button class="btn btn-secondary btn-sm pill">
+    {{tag}}
+  </button></a>
+{% endfor %}
+<p>{{post.body}}</p>
+{% include '_footer.liquid' %}

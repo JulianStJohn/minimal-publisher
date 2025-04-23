@@ -9,50 +9,26 @@ import { glob } from 'glob';
 import dotenv from 'dotenv';
 import { Liquid } from 'liquidjs';
 import { Request } from 'express';
-
+import { resolveMarkdownFilePathFromUrlPath } from './resolver-helpers'
 
 import app from './app';
 
 
-type TokenisedUrlPath = {
-  baseSlug: string;
-  subDirs: string[];
-}
 
-export function tokeniseUrlPath(inputPath: string): TokenisedUrlPath {
-  const cleanPath = inputPath.replace(/^\/+/, ''); // remove leading slashes
-  const parts = cleanPath.split('/');
-  const baseSlug = parts.pop() || ''; // last part like "test-post-alpha"
-  console.log(`tokeniseUrlPath baseSlug: ${baseSlug} subDirs: ${parts.join(',')}`)
-  const tokenisedUrlPath : TokenisedUrlPath = {
-    baseSlug: baseSlug,
-    subDirs: parts
-  }
-  return tokenisedUrlPath 
-}
-
-export async function resolveMarkdownFilePathFromUrlPath(inputPath: string): Promise<string | null> {
-  const tokenisedUrlPath = tokeniseUrlPath(inputPath)
-
-  if(tokenisedUrlPath.baseSlug.match(/[a-z\-]*/)){
-
-     console.log('possible index file ' + tokenisedUrlPath.baseSlug)
-     const possibleIndexFilePath = path.join(app.get('CONTENT_DIR'),'/',tokenisedUrlPath.baseSlug + '-index.md')
-     console.log('index file: ' + possibleIndexFilePath)
-     try { 
-      await fsp.access(possibleIndexFilePath, fs.constants.F_OK)
-      
-      return possibleIndexFilePath.toString()
-     }catch{ }
-  }
-  
-  // Search pattern like "content/tests/*-test-post-alpha.md"
-  const pattern = path.join(app.get('CONTENT_DIR'), 
-    tokenisedUrlPath.subDirs.join('/'), 
-    `*-${tokenisedUrlPath.baseSlug}.md`).replace(/\\/g, '/'
-  );
-  const matches = await glob(pattern);
-  return matches.length > 0 ? matches[0] : null;
+export type ParsedMarkdownFile = {
+  // filename: file name yyyymmdd-filename.md, or indexname-index.md
+  filename: string,
+  // path: file path without filename
+  path: string,
+  date: Date | null,
+  fileParsed? : boolean,
+  error? : string,
+  body: string,
+  published? : string,
+  tags?: Array<string>,
+  author?: string,
+  title?: string,
+  urlPath? : string
 }
 
 function extractDateFromFilename(filename: string): Date | null {
@@ -67,48 +43,66 @@ function extractDateFromFilename(filename: string): Date | null {
   return new Date(Number(year), Number(month) - 1, Number(day));
 }
 
-export async function allMarkdownFiles(dir: string) : Promise<ParsedMarkdownFile[]>  {
-  const pattern = path.join(dir, '**/*.md').replace(/\\/g, '/'); // Windows compatibility
+export async function allContentMarkdownFiles(dir: string = app.get('CONTENT_DIR')) : Promise<ParsedMarkdownFile[]>  {
+  const pattern = path.join(dir, '**/*.md').replace(/\\/g, '/'); 
   const files = await glob(pattern);
   const parsedFiles : ParsedMarkdownFile[] = []
   for(const filePath of files) {
-    const parsedFile = await parseMarkdownFile(filePath, false)
-    const resourceName = filePath.split('/').pop() || ''
-    if(!resourceName.includes('-index')) parsedFiles.push(parsedFile)
+    const filename = filePath.split('/').pop() || ''
+    if (/[0-9]{8}-[a-z0-9\-]+\.md/.test(filename)) parsedFiles.push(await parseMarkdownFile(filePath))
   } 
+  // sort by date
+  parsedFiles.sort((a : ParsedMarkdownFile, b : ParsedMarkdownFile )=> {
+    if(a.date == null || b.date == null) return 0
+    return b.date.getTime() - a.date.getTime()
+  })
+
   return parsedFiles
 }
 
-type ParsedMarkdownFile = {
-  filename: string,
-  path: string,
-  date: Date | null,
-  fileParsed? : boolean,
-  error? : string,
-  body?: string,
-  tags?: string[],
-  author?: string,
-  title?: string,
-  urlPath? : string
-}
-export async function parseMarkdownFile(filePath: string, getContent: boolean = false) : Promise<ParsedMarkdownFile>{
+export async function parseMarkdownFile(filePath: string) : Promise<ParsedMarkdownFile>{
   const fileContent = await fsp.readFile(filePath, { encoding: 'utf8' as BufferEncoding });
   const filename = path.basename(filePath);
   const date = extractDateFromFilename(filename);
   
   const { content, data: frontMatter } = matter(fileContent);
+  
+  if('tags' in frontMatter){
+    frontMatter.tags = (()=>{
+      if (frontMatter.tags == null) return []
+      return (Array.isArray(frontMatter.tags)) ? frontMatter.tags : frontMatter.tags.toString().split(',')
+    })()
+  }
+  if(!('image' in frontMatter)){
+    frontMatter.image = 'none'
+  }
+
   const parsedFile : ParsedMarkdownFile = {
     filename: filename,
     path: filePath,
     date: date,
     ...frontMatter,
     urlPath: getLinkFromFilePath(filePath),
-    fileParsed: true,
-    body: 'no-content' 
+    fileParsed: true, 
+    body: ''
   };
-  if(getContent) parsedFile['body'] =  await marked(content);
+  parsedFile['body'] =  await marked(content);
+  // If the file is in /sf1/sf2/post.md, add sf1 and sf2 to its tags
   const parsedFileWithSubDirTags : ParsedMarkdownFile = addRelativeDirToParsedFileTags(parsedFile)
   return parsedFileWithSubDirTags 
+}
+
+export type ParsedIndexFile = {
+  filename: string
+  path: string,
+  body: string,
+  tag: string
+}
+
+export async function getSitePartialContent(filename : string){
+  const fileContent = await fsp.readFile(`${app.get('CONTENT_DIR')}/${filename}`, { encoding: 'utf8' as BufferEncoding });
+  const menuContent = (await marked(fileContent))
+  return menuContent
 }
 
 export function getTokenisedRelativeFilePathFromFullFilePath (fullFilePath : string) : string[] {
@@ -117,15 +111,17 @@ export function getTokenisedRelativeFilePathFromFullFilePath (fullFilePath : str
 
 export function addRelativeDirToParsedFileTags(parsedFile : ParsedMarkdownFile) : ParsedMarkdownFile{
   const tokenisedRelativePath = getTokenisedRelativeFilePathFromFullFilePath(parsedFile.path) 
-  if(!('tags' in parsedFile)) { parsedFile['tags'] = [] }
-  if((parsedFile.tags != undefined) && tokenisedRelativePath.length > 0){
-    const clonedTagsArray = [...parsedFile.tags, ...tokenisedRelativePath]
-    parsedFile.tags = clonedTagsArray
+
+  if(!('tags' in parsedFile) || parsedFile.tags == undefined ) { parsedFile['tags'] = [] }
+  if( tokenisedRelativePath.length > 0){
+    for (const pathToken of tokenisedRelativePath) {
+      if(!parsedFile.tags.includes(pathToken)) parsedFile.tags.push(pathToken)
+    } 
   }
   return parsedFile 
 }
 export function errorParsedMarkdownFile(error:string){
-  return { fileParsed: false, error: error, filename: '', path: '', date: null } 
+  return { fileParsed: false, error: error, filename: '', path: '', body: '', date: null } 
 }
 
 export async function parseMarkDownFileFromUrlPath(inputPath: string) : Promise<ParsedMarkdownFile>{
@@ -133,11 +129,12 @@ export async function parseMarkDownFileFromUrlPath(inputPath: string) : Promise<
   const markdownFilePath = await resolveMarkdownFilePathFromUrlPath(inputPath)
   if(!markdownFilePath){ return errorParsedMarkdownFile('Invalid Path') }
   console.log(`filePath: ${markdownFilePath}`)
-  const parsedMarkdownFile = await parseMarkdownFile(markdownFilePath, true)
+  const parsedMarkdownFile = await parseMarkdownFile(markdownFilePath )
   if(!parsedMarkdownFile){ return errorParsedMarkdownFile('Could not parse file') }
   return parsedMarkdownFile 
 }
 
+// this may need to be retired
 export function getLinkFromFilePath(inputPath: string){
   const filename = path.basename(inputPath)
   const filenameSlugMatch = filename.match(/^[0-9]{8}\-(?<filenameslug>[a-zA-Z0-9\-]+)\.md/)
