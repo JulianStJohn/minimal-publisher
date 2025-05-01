@@ -3,23 +3,24 @@
   <div class="container">
     <div class="row">
       <div class="col-12 col-lg-6">{{ body }}</div>
-      <div class="col-6 text-end d-none d-lg-block"><img src="/images/hero.jpg" width='350px' /></div>
+      <div class="col-6 text-end d-none d-lg-block"><img src="/images/hero.jpg" width='250px' /></div>
     </div>
   </div>
 </div>
 
 <!-- Featured Posts -->
 <div class="container-fluid px-0">
-  {% for featuredTagData in featuredTagsData %}
+  
+{% for featuredTagData in featuredTagsData %}
   <div class="row">
     <div class="col-12 col-md-12 p-3 ">
       <span style="font-size: 1.2rem;">Featured posts: {{ featuredTagData.tag }}</span>
     </div>
   </div>
   <div class="row g-3">
-    {% for featuredTagPost in featuredTagData.posts %}
+    
+  {% for featuredTagPost in featuredTagData.posts %}
     <div class="col-12 col-md-4 ">
-
       <div class="card shadow mb-2" onclick="window.location.href='{{ featuredTagPost.urlPath }}'" style="height: 400px; position: relative; overflow: hidden; cursor: pointer;">
         <img class="card-img-top" src="{{featuredTagPost.image}}" style="filter: grayscale(100%);">
         <div class="card-body">
@@ -28,7 +29,6 @@
           </p>
           <p>
             <span class='fw-light'>
-             
               {{ featuredTagPost.body }}
             </span>
           </p>
