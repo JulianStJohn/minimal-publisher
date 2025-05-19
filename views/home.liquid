@@ -20,7 +20,7 @@
   <div class="row g-3">
     
   {% for featuredTagPost in featuredTagData.posts %}
-    <div class="col-12 col-md-4 ">
+    <div class="col-12 col-lg-4 ">
       <div class="card shadow mb-2" onclick="window.location.href='{{ featuredTagPost.urlPath }}'" style="height: 400px; position: relative; overflow: hidden; cursor: pointer;">
         <img class="card-img-top" src="{{featuredTagPost.image}}" style="filter: grayscale(100%);">
         <div class="card-body">

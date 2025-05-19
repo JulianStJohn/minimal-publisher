@@ -1,10 +1,16 @@
 :root {
   --heading-font: 'Fira Sans Extra Condensed', Helvetica, sans-serif;
   --content-font:  "Pt Sans",  Helvetica, sans-serif;
+  --text-charcoal: #1c1c1c;
+  --text-grey: #525252;
+  --text-red: #c22a00;
+
+
 }
 
 body {
   font-family: var(--content-font);
+  color: var( --text-charcoal);
 }
 a { color: inherit; }
 button.pill {
@@ -45,7 +51,13 @@ button.pill {
 .small-text { font-size: 0.75rem; }
 
 h1, h2, h3, h4, .navbar-brand, .featured-post-title {  font-family: var(--heading-font);}
+h2,h3,h4 { color: var( --text-grey); }
 h1 { font-size: 2.0rem; }
 h2 { font-size: 1.5rem; }
 h3 { font-size: 1.25rem; }
 h4 { font-size: 1.10rem; } 
+
+.post-date {
+  text-transform: uppercase;
+
+}
