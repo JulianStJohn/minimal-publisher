@@ -1,6 +1,12 @@
-a {
-    color: inherit;
+:root {
+  --heading-font: 'Fira Sans Extra Condensed', Helvetica, sans-serif;
+  --content-font:  "Pt Sans",  Helvetica, sans-serif;
 }
+
+body {
+  font-family: var(--content-font);
+}
+a { color: inherit; }
 button.pill {
   border-radius: 20px;
   height: 25px; 
@@ -38,6 +44,7 @@ button.pill {
 .tiny-text { font-size: 0.5rem; }
 .small-text { font-size: 0.75rem; }
 
+h1, h2, h3, h4, .navbar-brand, .featured-post-title {  font-family: var(--heading-font);}
 h1 { font-size: 2.0rem; }
 h2 { font-size: 1.5rem; }
 h3 { font-size: 1.25rem; }
