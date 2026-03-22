@@ -42,6 +42,7 @@ const contentDirStr = process.env[`${RUNTIME_ENV}_CONTENT_DIR`];
 const CONTENT_DIR = path.resolve(contentDirStr || './_test-posts');
 const SITE_NAME = process.env[`SITE_NAME`]
 const FEATURED_TAGS = (process.env['FEATURED_TAGS'] || '').replace(' ','').split(',')
+const MAPPED_EXTERNAL_FOLDERS = (process.env['MAPPED_EXTERNAL'] || '').split(',')
 
 app.locals.siteTitle = SITE_NAME
 
@@ -56,6 +57,43 @@ app.get(/\/.*/, async (req, res, next) => {
   console.log("Processing: " + req.path.toString() )
   return next();
 })
+
+
+function fourohfour(res: any ){
+  res.status(404).send(`Not found `); 
+}
+
+// allow html pages to be served out of the 'ext' directory of the content dir
+app.get(/ext\/(.*)/, async(req, res, next) => {
+  console.log('hihi')
+  let pathString = req.path.toString();
+  let subdirectories = pathString.split("/")
+  let first_subdir = subdirectories[2]
+  if(!MAPPED_EXTERNAL_FOLDERS.includes(first_subdir)){
+    fourohfour(res)
+    return
+  }
+  const validCharsRegex = /^\/ext\/(?<subdirectories>[A-Z0-9a-z\-_]+\/)*(?<filename>[A-Z0-9a-z\-_]+\.(?<extension>(min\.js)|(js)|(css)|(html)|(jpg)|(yaml)))?$/
+  const validCharsMatch = pathString.match(validCharsRegex);
+  if(!validCharsMatch){ 
+    fourohfour(res)
+    return
+  }
+
+  const filePath = CONTENT_DIR + '/ext/' + pathString.replace('/ext/','')
+  console.log(filePath)
+  res.sendFile(filePath, (err) => {
+  if (err) {
+    console.error(`Error returning file: ${req.path} - ${err.message}`);
+    fourohfour(res)
+    return
+  }
+});
+
+
+
+})
+
 
 // filter invalid paths
 app.get('/*path', async (req, res, next) => {
